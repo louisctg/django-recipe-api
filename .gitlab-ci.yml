@@ -1,21 +1,23 @@
-image: docker:latest
+---
+image: docker:cli
 services:
   - docker:dind
 
 stages:
-  - test-lint
+  - Checks
 
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
+.login_into_dockerhub:
+  before_script:
+    - docker login --username $DOCKERHUB_USER --password $DOCKERHUB_TOKEN
 
-before_script:
-  - docker login -u "$DOCKERHUB_USER" --password "$DOCKERHUB_TOKEN"
-
-test-lint:
-  stage: test-lint
-  tags:
-    - saas-linux-small-amd64
+Unit Tests:
+  stage: Checks
+  extends: .login_into_dockerhub
   script:
-    - docker compose run --rm app sh -c "python manage.py test"
-    - docker compose run --rm app sh -c "flake8"
+    - docker-compose run --rm app sh -c "python manage.py test"
+
+Linting:
+  stage: Checks
+  extends: .login_into_dockerhub
+  script:
+    - docker-compose run --rm app sh -c "flake8"
